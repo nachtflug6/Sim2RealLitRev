@@ -4,9 +4,9 @@ import pandas as pd
 from transformers import BertTokenizer
 
 
-class BertDataset(pt.utils.data.Dataset):
+class ScopusDataset(pt.utils.data.Dataset):
 
-    def __init__(self, df_data, df_label):
+    def __init__(self, df_data):
         tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 
         df_data = pd.DataFrame(columns=['title', 'description'], data=df_data[['title', 'description']].values)
@@ -19,22 +19,29 @@ class BertDataset(pt.utils.data.Dataset):
 
         self.df_data = df_data.applymap(
             lambda x: tokenizer(x, padding='max_length', max_length=512, truncation=True, return_tensors="pt"))
+
     # def classes(self):
     #     return self.labels
 
-    # def __len__(self):
-    #     return len(self.labels)
+    def __len__(self):
+        return len(self.df_data.index)
 
     # def get_batch_labels(self, idx):
     #     # Fetch a batch of labels
     #     return np.array(self.labels[idx])
 
-    def get_batch_texts(self, idx):
+    def get_row(self, idx):
         # Fetch a batch of inputs
         return self.df_data.iloc[idx]
 
     def __getitem__(self, idx):
-        batch_texts = self.get_batch_texts(idx)
-        #batch_y = self.get_batch_labels(idx)
+        row = self.get_row(idx)
 
-        return batch_texts
+        title = row['title']
+        abstract = row['description']
+
+        out_tuple = {'title': (title['input_ids'][0], title['attention_mask'][0]),
+                     'abstract': (abstract['input_ids'][0], abstract['attention_mask'][0])}
+
+
+        return out_tuple
